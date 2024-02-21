@@ -6,8 +6,8 @@
 
   let checkRequired = false;
 
-  function updatePdf() {
-    $previewData = generateCard($pdfOptions, $cardData, frontImg, backImg);
+  async function updatePdf() {
+    $previewData = await generateCard($cardData, frontImg, backImg);
     checkRequired = true;
   }
 

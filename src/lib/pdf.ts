@@ -1,9 +1,7 @@
-import { jsPDF, type jsPDFOptions } from "jspdf";
-import { CARD_SIZE } from "@/lib/constants";
-import "@/assets/icons";
-import "@/assets/inter-bold";
-import "@/assets/inter-regular";
 import type { cardDataType } from "./types";
+import { PDFDocument, StandardFonts } from "pdf-lib";
+import { CARD_SIZE, MM_TO_POINTS } from "@/lib/constants";
+import template from "@/assets/template.pdf";
 
 function formatPhone(phone: string) {
   return phone
@@ -12,44 +10,42 @@ function formatPhone(phone: string) {
     .replace(/(\d{3})(\d{3})(\d{3})/, "$1 $2 $3");
 }
 
-export function generateCard(
-  pdfOptions: jsPDFOptions,
+export async function generateCard(
   cardData: cardDataType,
   frontImg: string,
   backImg: string,
 ) {
+  const pdfBuffer = await fetch(template).then((res) => res.arrayBuffer());
+  const doc = await PDFDocument.load(pdfBuffer);
+  const page = doc.getPage(0);
   const { name, phone, city, address } = cardData;
-  const doc = new jsPDF(pdfOptions);
 
-  /* PAGE 1 */
-  doc.addImage(backImg, "JPEG", 0, 0, CARD_SIZE.height, CARD_SIZE.width);
+  const regular = await doc.embedFont(StandardFonts.Helvetica);
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  doc
-    .setFont("inter", "normal", "bold")
-    .setFontSize(10)
-    .text(name, CARD_SIZE.margin, 60, {
-      maxWidth: CARD_SIZE.margin * 2 - CARD_SIZE.width,
-    });
+  page.drawText(name, {
+    x: CARD_SIZE.margin + 4 * MM_TO_POINTS,
+    y: CARD_SIZE.margin + 26 * MM_TO_POINTS,
+    size: 11,
+    maxWidth: CARD_SIZE.width,
+    font: bold,
+  });
 
-  doc
-    .setFont("inter", "normal", "normal")
-    .setFontSize(8)
-    .text(
-      `(+34) ${formatPhone(phone)}
-${city.toLowerCase()}@elaudiolibrodetudia.com
-${city.toLowerCase()}.elaudiolibrodetudia.com
-${address}`,
-      CARD_SIZE.margin + 3.5,
-      69,
-      {
-        maxWidth: CARD_SIZE.margin * 2 - CARD_SIZE.width,
-        lineHeightFactor: 1.4,
-      },
-    );
+  page.drawText(
+    `(+34) ${formatPhone(phone)}\n${city.toLowerCase()}@elaudiolibrodetudia.com\n${city.toLowerCase()}.elaudiolibrodetudia.com\n${address}`,
+    {
+      x: CARD_SIZE.margin + 7.5 * MM_TO_POINTS,
+      y: CARD_SIZE.margin + 15.75 * MM_TO_POINTS,
+      maxWidth: CARD_SIZE.width,
+      size: 7,
+      font: regular,
+      lineHeight: 11,
+    },
+  );
 
-  /* PAGE 2 */
-  doc.addPage();
-  doc.addImage(frontImg, "JPEG", 0, 0, CARD_SIZE.height, CARD_SIZE.width);
+  const pdfBytes = await doc.save();
+  const pdfBlob = new Blob([pdfBytes], { type: "application/pdf" });
+  const blobUri = URL.createObjectURL(pdfBlob);
 
-  return doc.output("datauristring");
+  return blobUri;
 }
