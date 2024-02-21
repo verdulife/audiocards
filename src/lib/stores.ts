@@ -11,8 +11,8 @@ export const pdfOptions = readable({
 });
 
 export const cardData = writable({
-  name: "Albert Verdú",
-  phone: "600600600",
-  city: "sitges",
-  address: "Calle falsa 123",
+  name: "",
+  phone: "",
+  city: "",
+  address: "",
 });
